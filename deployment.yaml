@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loginapp-deployment
+  labels:
+    app: loginapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: loginapp
+  template:
+    metadata:
+      labels:
+        app: loginapp
+    spec:
+      containers:
+      - name: loginapp-container
+        image: rohithh55/loginappv2:latest  # Replace with your actual image name
+        ports:
+        - containerPort: 80
