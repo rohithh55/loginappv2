@@ -1,0 +1,16 @@
+pipeline {
+    agent any
+    environment {
+        
+   }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building..'
+                sh 'cd loginappv2 && npm install && npm run build'
+            }
+        }
+       
+    }
+}
