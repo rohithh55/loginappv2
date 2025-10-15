@@ -15,7 +15,7 @@ spec:
         app: loginapp
     spec:
       containers:
-      - name: loginapp-container
-        image: rohithh55/loginappv2:latest  # Replace with your actual image name
+      - name: logc
+        image: rohithreddy5/image1v2:latest  # Replace with your actual image name
         ports:
         - containerPort: 80
