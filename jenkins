@@ -1,16 +1,71 @@
 pipeline {
     agent any
+
     environment {
-        
-   }
+        IMAGE_NAME = "rohithreddy5/loginapp"
+        IMAGE_TAG = "latest"
+        DEPLOYMENT_FILE = "deployment.yaml"
+    }
 
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                echo 'Building..'
-                sh 'cd loginappv2 && npm install && npm run build'
+                git branch: 'main', url: 'https://github.com/rohithh55/loginappv2.git'
             }
         }
-       
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                    echo "Building Docker Image..."
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKER_PASS')]) {
+                        sh """
+                        echo "$DOCKER_PASS" | docker login -u rohithreddy5 --password-stdin
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (Minikube)') {
+            steps {
+                script {
+                    sh """
+                    echo "Applying Deployment to Minikube..."
+                    kubectl apply -f ${DEPLOYMENT_FILE}
+                    kubectl rollout status deployment/loginapp-deployment
+                    """
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    sh "kubectl get pods"
+                    sh "kubectl get svc"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment successful!'
+        }
+        failure {
+            echo '❌ Deployment failed. Check logs above.'
+        }
     }
 }
