@@ -15,7 +15,7 @@ spec:
         app: loginapp
     spec:
       containers:
-      - name: logc
+      - name: logina
         image: rohithreddy5/image1v2:latest  # Replace with your actual image name
         ports:
         - containerPort: 80
