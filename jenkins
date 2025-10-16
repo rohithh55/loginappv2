@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker image info
+        IMAGE_NAME = "rohithreddy5/image2"
+        TAG = "${BUILD_NUMBER}"
+
+        // Kubernetes context name in Jenkins agent (must be configured)
+        KUBECONFIG_CRED = 'kubeconfig-cred-id' // Jenkins credential ID for kubeconfig file
+        K8S_DEPLOYMENT = 'loginapp-deployment' // Change to your actual deployment name
+        K8S_CONTAINER = 'loginapp-container'   // Change to your actual container name
+        K8S_NAMESPACE = 'default'              // Change if using a custom namespace
+
+        // Docker Hub credentials
+        DOCKER_USER = "rohithreddy5"
+        DOCKER_PASS = "harikaloveu"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git url: 'https://github.com/rohithh55/loginappv2.git', branch: 'main'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                      docker build -t ${IMAGE_NAME}:${TAG} .
+                      docker tag ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    sh """
+                      echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                      docker push ${IMAGE_NAME}:${TAG}
+                      docker push ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: "${KUBECONFIG_CRED}", variable: 'KUBECONFIG_FILE')]) {
+                    sh """
+                      export KUBECONFIG=${KUBECONFIG_FILE}
+                      kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${IMAGE_NAME}:${TAG} -n ${K8S_NAMESPACE}
+                      kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Successfully deployed ${IMAGE_NAME}:${TAG} to Kubernetes"
+        }
+        failure {
+            echo "❌ Deployment failed"
+        }
+    }
+}
